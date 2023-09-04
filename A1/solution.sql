@@ -46,9 +46,11 @@ CREATE TABLE tags(
 );
 
 CREATE TABLE hasagenre(
-	movieid int NOT NULL REFERENCES movies(movieid),
-	genreid int REFERENCES genres(genreid)
+	movieid int REFERENCES movies(movieid),
+	genreid int REFERENCES genres(genreid),
+	PRIMARY KEY(movieid, genreid)
 );
+
 
 -- ***Query for data insert***
 
