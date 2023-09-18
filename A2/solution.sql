@@ -13,7 +13,8 @@ DROP TABLE IF EXISTS query9;
 CREATE TABLE query1 AS
 SELECT t1.name AS name, count(t2.movieid) AS moviecount
 FROM genres AS t1
-INNER JOIN hasagenre AS t2 ON t1.genreid=t2.genreid
+-- INNER JOIN hasagenre AS t2 ON t1.genreid=t2.genreid
+LEFT JOIN hasagenre AS t2 ON t1.genreid=t2.genreid
 GROUP BY t1.genreid;
 
 -- Testing query 1
@@ -24,7 +25,8 @@ CREATE TABLE query2 AS
 SELECT t3.name AS name, AVG(t2.rating) AS rating
 FROM hasagenre AS t1
 INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
-INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+-- INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+RIGHT JOIN genres AS t3 ON t1.genreid=t3.genreid
 GROUP BY t3.genreid;
 
 -- Testing query 2
@@ -57,7 +59,8 @@ WHERE t3.name='Comedy';
 CREATE TABLE query5 AS
 SELECT t2.title AS title, AVG(t1.rating) AS average
 FROM ratings AS t1
-INNER JOIN movies AS t2 ON t1.movieid=t2.movieid
+-- INNER JOIN movies AS t2 ON t1.movieid=t2.movieid
+RIGHT JOIN movies AS t2 ON t1.movieid=t2.movieid
 GROUP BY t2.title;
 
 -- Testing query 5
