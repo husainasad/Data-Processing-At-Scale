@@ -1,126 +1,120 @@
 -- Drop tables if  already present
-DROP TABLE IF EXISTS ratings;
-DROP TABLE IF EXISTS tags;
-DROP TABLE IF EXISTS hasagenre;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS movies;
-DROP TABLE IF EXISTS taginfo;
-DROP TABLE IF EXISTS genres;
+DROP TABLE IF EXISTS query1;
+DROP TABLE IF EXISTS query2;
+DROP TABLE IF EXISTS query3;
+DROP TABLE IF EXISTS query4;
+DROP TABLE IF EXISTS query5;
+DROP TABLE IF EXISTS query6;
+DROP TABLE IF EXISTS query7;
+DROP TABLE IF EXISTS query8;
+DROP TABLE IF EXISTS query9;
 
--- Create tables
-CREATE TABLE users(
-    userid int PRIMARY KEY,
-    name text NOT NULL
-);
+-- Query 1
+CREATE TABLE query1 AS
+SELECT t1.name AS name, count(t2.movieid) AS moviecount
+FROM genres AS t1
+INNER JOIN hasagenre AS t2 ON t1.genreid=t2.genreid
+GROUP BY t1.genreid;
 
-CREATE TABLE movies(
-	movieid int PRIMARY KEY,
-	title text NOT NULL
-);
+-- Testing query 1
+-- SELECT * FROM query1
 
-CREATE TABLE taginfo(
-	tagid int PRIMARY KEY,
-	content text NOT NULL
-);
+-- Query 2
+CREATE TABLE query2 AS
+SELECT t3.name AS name, AVG(t2.rating) AS rating
+FROM hasagenre AS t1
+INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+GROUP BY t3.genreid;
 
-CREATE TABLE genres(
-	genreid int PRIMARY KEY,
-	name text NOT NULL
-);
+-- Testing query 2
+-- SELECT * FROM query2
 
-CREATE TABLE ratings(
-	userid int REFERENCES users(userid),
-	movieid int REFERENCES movies(movieid),
-	rating numeric NOT NULL,
-	timestamp bigint NOT NULL,
-	PRIMARY KEY(userid, movieid),
-	CHECK(rating>=0 AND rating<=5)
-);
+-- Query 3
+CREATE TABLE query3 AS
+SELECT t1.title AS title, COUNT(t2.rating) as countofratings
+FROM movies as t1
+INNER JOIN ratings as t2 ON t1.movieid=t2.movieid
+GROUP BY t1.movieid
+Having COUNT(t2.rating)>=10;
 
-CREATE TABLE tags(
-	userid int REFERENCES users(userid),
-	movieid int REFERENCES movies(movieid),
-	tagid int REFERENCES taginfo(tagid),
-	timestamp bigint NOT NULL,
-	PRIMARY KEY(userid, movieid, tagid)
-);
+-- Testing query 3
+-- SELECT * FROM query3
+-- SELECT * FROM query3 where title='Sleepy Hollow (1999)'
 
-CREATE TABLE hasagenre(
-	movieid int REFERENCES movies(movieid),
-	genreid int REFERENCES genres(genreid),
-	PRIMARY KEY(movieid, genreid)
-);
+-- Query 4
+CREATE TABLE query4 AS
+SELECT t1.movieid AS movieid, t2.title AS title
+FROM hasagenre AS t1
+INNER JOIN movies AS t2 ON t1.movieid=t2.movieid
+INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+WHERE t3.name='Comedy';
 
+-- Testing query 4
+-- SELECT * FROM query4
 
--- ***Query for data insert***
+-- Query 5
+CREATE TABLE query5 AS
+SELECT t2.title AS title, AVG(t1.rating) AS average
+FROM ratings AS t1
+INNER JOIN movies AS t2 ON t1.movieid=t2.movieid
+GROUP BY t2.title;
 
-\copy users from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\users.dat' DELIMITERS '%';
-\copy movies from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\movies.dat' DELIMITERS '%';
-\copy taginfo from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\taginfo.dat' DELIMITERS '%';
-\copy genres from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\genres.dat' DELIMITERS '%';
-\copy ratings from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\ratings.dat' DELIMITERS '%';
-\copy tags from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\tags.dat' DELIMITERS '%';
-\copy hasagenre from 'D:\ASU_2023_Fall\Data Processing at Scale\Assignment 1\hasagenre.dat' DELIMITERS '%';
+-- Testing query 5
+-- SELECT * FROM query5
+-- SELECT * FROM query5 where title='Where the Heart Is (2000)'
 
--- ***Testing***
+-- Query 6
+CREATE TABLE query6 AS
+SELECT AVG(t2.rating) AS average
+FROM hasagenre AS t1
+INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+WHERE t3.name='Comedy';
 
--- Normal Data Insertion
-INSERT INTO users
-VALUES (10000, 'newuser');
+-- Testing query 6
+-- SELECT * FROM query6
 
-INSERT INTO movies
-VALUES (65135, 'Blue Beetle');
+-- Query 7
+CREATE TABLE query7 AS
+SELECT AVG(t4.rating) AS average
+FROM ratings as t4
+WHERE t4.movieid IN
+	(SELECT t1.movieid
+	FROM hasagenre AS t1
+	INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+	INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+	WHERE t3.name='Comedy'
+	INTERSECT
+	SELECT t1.movieid
+	FROM hasagenre AS t1
+	INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+	INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+	WHERE t3.name='Romance');
+	
+-- Testing query 7
+-- SELECT * FROM query7
 
-INSERT INTO taginfo
-VALUES (3280, 'mexican comedy');
+-- Query 8
+CREATE TABLE query8 AS
+SELECT AVG(t2.rating)
+FROM hasagenre AS t1
+INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+WHERE t3.name='Romance' AND t1.movieid NOT IN
+	(SELECT t1.movieid
+	FROM hasagenre AS t1
+	INNER JOIN ratings AS t2 ON t1.movieid=t2.movieid
+	INNER JOIN genres AS t3 ON t1.genreid=t3.genreid
+	WHERE t3.name='Comedy');
+	
+-- Testing query 8
+-- SELECT * FROM query8
 
-INSERT INTO genres
-VALUES (19, 'loco');
+-- Query 9
+-- \set v1 10;
 
-INSERT INTO ratings
-VALUES (10000, 65135, 4, 1162164173);
-
-INSERT INTO tags
-VALUES (10000, 65135, 19, 1162164173);
-
-INSERT INTO hasagenre
-VALUES (65135, 19);
-
--- Non-existent Foreign Key insertion
-INSERT INTO ratings
-VALUES (10000, 65137, 4, 1162164173);
-
-INSERT INTO tags
-VALUES (10001, 65135, 19, 1162164173);
-
-INSERT INTO hasagenre
-VALUES (65137, 19);
-
--- Duplicate rating insertion
-INSERT INTO ratings
-VALUES (10000, 65135, 3.5, 1162164177);
-
--- Wrong genre id insertion
-INSERT INTO hasagenre
-VALUES (65135, 20);
-
--- Inserting rating larger than 5
-INSERT INTO ratings
-VALUES (9999, 65135, 6, 1162164173);
-
--- Inserting movie with no genre
-INSERT INTO hasagenre
-VALUES (65135, NULL);
-
-SELECT * from hasagenre
-WHERE movieid=65135
-
--- Adding multiple tags to same movie
-INSERT INTO tags
-VALUES (10000, 65135, 3280, 1162164173);
-
-INSERT INTO tags
-VALUES (10000, 65135, 3200, 1162164173);
-
-SELECT * from tags
-WHERE movieid=65135
+CREATE TABLE query9 AS
+SELECT movieid, rating
+FROM ratings
+WHERE ratings.userid=:v1
