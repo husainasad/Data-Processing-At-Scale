@@ -34,7 +34,28 @@ def loadRatings(ratingstablename, ratingsfilepath, openconnection):
 
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
-    pass
+
+    cur = openconnection.cursor()
+    interval = 5.0/numberofpartitions
+    lowerBound = 0
+    upperBound = interval
+
+    cur.execute('CREATE TABLE range_part{0} AS SELECT * FROM {1} WHERE rating>={2} AND rating<={3}'.format(0, ratingstablename, lowerBound, upperBound))
+    lowerBound = upperBound
+    upperBound +=interval
+
+    for i in range(1, numberofpartitions):
+        cur.execute('CREATE TABLE range_part{0} AS SELECT * FROM {1} WHERE rating>{2} AND rating<={3}'.format(i, ratingstablename, lowerBound, upperBound))
+
+        lowerBound = upperBound
+        upperBound +=interval
+
+    # print('Range Partitions created')
+
+    cur.execute('UPDATE Metadata SET range_partitions = {0}'.format(numberofpartitions))
+    openconnection.commit()
+    cur.close()
+    openconnection.close()
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
@@ -46,7 +67,29 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+
+    cur = openconnection.cursor()
+
+    cur.execute('SELECT * FROM Metadata')
+    data = cur.fetchall()[0]
+    rows = data[0]
+    partitions = data[1]
+
+    interval = 5.0/partitions
+    partition_insert = int((rating/interval))
+
+    if(rating!=0 and rating==partition_insert*interval):
+        partition_insert-=1
+
+    cur.execute('INSERT INTO range_part{0} VALUES ({1},{2},{3})'.format(partition_insert, userid, itemid, rating))
+
+    # print('Data inserted into range partition')
+
+    cur.execute('UPDATE Metadata SET row_count={0}'.format(rows+1))
+    
+    openconnection.commit()
+    cur.close()
+    openconnection.close()
 
 def createDB(dbname='dds_assignment'):
     """
@@ -69,6 +112,13 @@ def createDB(dbname='dds_assignment'):
 
         con = getOpenConnection(dbname=dbname)
         loadRatings(ratingstablename='Ratings', ratingsfilepath='./text_data.txt', openconnection=con)
+
+        con = getOpenConnection(dbname=dbname)
+        rangePartition(ratingstablename='Ratings', numberofpartitions=5, openconnection=con)
+
+        con = getOpenConnection(dbname=dbname)
+        rangeinsert(ratingstablename='Ratings', userid=20, itemid=600, rating=2, openconnection=con)
+        
     else:
         print ('A database named {0} already exists'.format(dbname))
         cur.execute('DROP DATABASE %s' % (dbname,))
