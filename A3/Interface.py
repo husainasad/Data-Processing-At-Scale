@@ -59,11 +59,40 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
-    pass
 
+    cur = openconnection.cursor()
+
+    for i in range(0, numberofpartitions):
+        cur.execute('CREATE TABLE rrobin_part{0} AS WITH T1 AS (SELECT *, row_number() OVER (ORDER BY userid, movieid) AS rownum FROM {1}) SELECT userid, movieid, rating FROM T1 WHERE (rownum-1)%{2} = {0} '.format(i, ratingstablename, numberofpartitions))
+
+    # print('Round Robin Partitions created')
+
+    cur.execute('UPDATE Metadata SET rr_partitions = {0}'.format(numberofpartitions))
+    openconnection.commit()
+    cur.close()
+    openconnection.close()
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+
+    cur = openconnection.cursor()
+
+    cur.execute('SELECT * FROM Metadata')
+    data = cur.fetchall()[0]
+    rows = data[0]
+    partitions = data[2]
+
+    row_insert = rows+1
+    partition_insert = (row_insert-1)%partitions
+
+    cur.execute('INSERT INTO rrobin_part{0} VALUES ({1},{2},{3})'.format(partition_insert, userid, itemid, rating))
+
+    # print('Data inserted into round robin partition')
+
+    cur.execute('UPDATE Metadata SET row_count={0}'.format(row_insert))
+    
+    openconnection.commit()
+    cur.close()
+    openconnection.close()
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
@@ -118,7 +147,13 @@ def createDB(dbname='dds_assignment'):
 
         con = getOpenConnection(dbname=dbname)
         rangeinsert(ratingstablename='Ratings', userid=20, itemid=600, rating=2, openconnection=con)
-        
+
+        con = getOpenConnection(dbname=dbname)
+        roundRobinPartition(ratingstablename='Ratings', numberofpartitions=5, openconnection=con)
+
+        con = getOpenConnection(dbname=dbname)
+        roundrobininsert(ratingstablename='Ratings', userid=20, itemid=600, rating=2, openconnection=con)
+
     else:
         print ('A database named {0} already exists'.format(dbname))
         cur.execute('DROP DATABASE %s' % (dbname,))
