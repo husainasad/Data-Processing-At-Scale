@@ -10,7 +10,27 @@ def getOpenConnection(user='postgres', password='1234', dbname='postgres'):
 
 
 def loadRatings(ratingstablename, ratingsfilepath, openconnection):
-    pass
+
+    cur = openconnection.cursor()
+    cur.execute('CREATE TABLE IF NOT EXISTS {0} (userid int, t1 char, movieid int, t2 char, rating float, t3 char, t4 varchar, PRIMARY KEY(userid, movieid), CHECK(rating>=0 AND rating<=5))'.format(ratingstablename)
+)
+
+    # print('Table {} created'.format(ratingstablename))
+
+    cur.execute(''' COPY {0} FROM '{1}' DELIMITERS ':' '''.format(ratingstablename, ratingsfilepath))
+
+    # print('Data inserted into Table {}'.format(ratingstablename))
+
+    cur.execute('ALTER TABLE {} DROP COLUMN t1, DROP COLUMN t2, DROP COLUMN t3, DROP COLUMN t4'.format(ratingstablename))
+
+    cur.execute('CREATE TABLE Metadata (row_count int, range_partitions int, rr_partitions int)')
+    cur.execute('INSERT INTO Metadata (SELECT COUNT(*), 0, 0 FROM {0})'.format(ratingstablename))
+
+    # print('Metadata table created')
+    
+    openconnection.commit()
+    cur.close()
+    openconnection.close()
 
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
@@ -44,8 +64,15 @@ def createDB(dbname='dds_assignment'):
     count = cur.fetchone()[0]
     if count == 0:
         cur.execute('CREATE DATABASE %s' % (dbname,))  # Create the database
+        # print ('DB {} created'.format(dbname))
+        con.close()
+
+        con = getOpenConnection(dbname=dbname)
+        loadRatings(ratingstablename='Ratings', ratingsfilepath='./text_data.txt', openconnection=con)
     else:
-        print 'A database named {0} already exists'.format(dbname)
+        print ('A database named {0} already exists'.format(dbname))
+        cur.execute('DROP DATABASE %s' % (dbname,))
+        con.close()
 
     # Clean up
     cur.close()
@@ -76,11 +103,14 @@ def deleteTables(ratingstablename, openconnection):
     except psycopg2.DatabaseError, e:
         if openconnection:
             openconnection.rollback()
-        print 'Error %s' % e
+        print ('Error %s' % e)
     except IOError, e:
         if openconnection:
             openconnection.rollback()
-        print 'Error %s' % e
+        print ('Error %s' % e)
     finally:
         if cursor:
             cursor.close()
+
+if __name__ == '__main__':
+    createDB()
