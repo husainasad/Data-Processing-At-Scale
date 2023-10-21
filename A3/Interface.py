@@ -29,9 +29,6 @@ def loadRatings(ratingstablename, ratingsfilepath, openconnection):
     # print('Metadata table created')
     
     openconnection.commit()
-    cur.close()
-    openconnection.close()
-
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
@@ -53,10 +50,8 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
     # print('Range Partitions created')
 
     cur.execute('UPDATE Metadata SET range_partitions = {0}'.format(numberofpartitions))
-    openconnection.commit()
-    cur.close()
-    openconnection.close()
 
+    openconnection.commit()
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
 
@@ -68,9 +63,8 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
     # print('Round Robin Partitions created')
 
     cur.execute('UPDATE Metadata SET rr_partitions = {0}'.format(numberofpartitions))
+    
     openconnection.commit()
-    cur.close()
-    openconnection.close()
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
 
@@ -91,9 +85,6 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
     cur.execute('UPDATE Metadata SET row_count={0}'.format(row_insert))
     
     openconnection.commit()
-    cur.close()
-    openconnection.close()
-
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
 
@@ -117,8 +108,6 @@ def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
     cur.execute('UPDATE Metadata SET row_count={0}'.format(rows+1))
     
     openconnection.commit()
-    cur.close()
-    openconnection.close()
 
 def createDB(dbname='dds_assignment'):
     """
@@ -136,28 +125,9 @@ def createDB(dbname='dds_assignment'):
     count = cur.fetchone()[0]
     if count == 0:
         cur.execute('CREATE DATABASE %s' % (dbname,))  # Create the database
-        # print ('DB {} created'.format(dbname))
-        con.close()
-
-        con = getOpenConnection(dbname=dbname)
-        loadRatings(ratingstablename='Ratings', ratingsfilepath='./text_data.txt', openconnection=con)
-
-        con = getOpenConnection(dbname=dbname)
-        rangePartition(ratingstablename='Ratings', numberofpartitions=5, openconnection=con)
-
-        con = getOpenConnection(dbname=dbname)
-        rangeinsert(ratingstablename='Ratings', userid=20, itemid=600, rating=2, openconnection=con)
-
-        con = getOpenConnection(dbname=dbname)
-        roundRobinPartition(ratingstablename='Ratings', numberofpartitions=5, openconnection=con)
-
-        con = getOpenConnection(dbname=dbname)
-        roundrobininsert(ratingstablename='Ratings', userid=20, itemid=600, rating=2, openconnection=con)
 
     else:
         print ('A database named {0} already exists'.format(dbname))
-        cur.execute('DROP DATABASE %s' % (dbname,))
-        con.close()
 
     # Clean up
     cur.close()
@@ -196,6 +166,3 @@ def deleteTables(ratingstablename, openconnection):
     finally:
         if cursor:
             cursor.close()
-
-if __name__ == '__main__':
-    createDB()
