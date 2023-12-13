@@ -46,6 +46,33 @@ object HotcellUtils {
     calendar.setTimeInMillis(timestamp.getTime)
     return calendar.get(Calendar.DAY_OF_MONTH)
   }
+  
+  def computeAdjacentHotcell( minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int, X: Int, Y: Int, Z: Int): Int = {
+    var count = 0
 
-  // YOU NEED TO CHANGE THIS PART
+    if (X == minX || X == maxX) {
+        count += 1
+    }
+
+    if (Y == minY || Y == maxY) {
+        count += 1
+    }
+
+    if (Z == minZ || Z == maxZ) {
+        count += 1
+    }
+
+    count match {
+        case 1 => 18
+        case 2 => 12
+        case 3 => 8
+        case _ => 27
+    }
+  }
+
+  def GScore(numCells: Int, x: Int, y: Int, z: Int, adjacentHotcell: Int, cellNumber: Int , avg: Double, stdDev: Double): Double = {
+    var adjHotCell: Double = adjacentHotcell.toDouble
+    var numOfCells: Double = numCells.toDouble
+    (cellNumber.toDouble - (avg * adjHotCell)) / (stdDev * math.sqrt((( adjHotCell * numOfCells) - (adjHotCell * adjHotCell)) / (numOfCells - 1.0)))
+  }
 }
