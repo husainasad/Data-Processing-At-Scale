@@ -2,3 +2,5 @@
 /spark-warehouse/
 /target/
 /test/
+/.metals/
+/.vscode/

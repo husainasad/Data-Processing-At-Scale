@@ -7,7 +7,7 @@ lazy val root = (project in file(".")).
 
     version := "0.1.0",
 
-    scalaVersion := "2.11.11",
+    scalaVersion := "2.11.12",
 
     organization  := "org.datasyslab",
 
